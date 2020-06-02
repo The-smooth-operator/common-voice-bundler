@@ -34,14 +34,6 @@ const { accessKeyId, secretAccessKey, name: outBucketName } = config.get(
 );
 
 const outBucket = new S3({
-  ...(accessKeyId
-    ? {
-        credentials: {
-          accessKeyId,
-          secretAccessKey
-        }
-      }
-    : {}),
   region: 'us-west-2'
 });
 const releaseDir = config.get('releaseName');
@@ -51,14 +43,6 @@ const downloadClipFile = path => {
     'clipBucket'
   );
   return new S3({
-    ...(accessKeyId
-      ? {
-          credentials: {
-            accessKeyId,
-            secretAccessKey
-          }
-        }
-      : {}),
     region
   }).getObject({
     Bucket: name,
@@ -191,14 +175,6 @@ function getLocaleDirs() {
 }
 
 const _countBuckets = async () => {
-  const query = `In a separate shell, run the following command:
-    create-corpora -f ${TSV_PATH} -d ${OUT_DIR} -v\n
-When that has completed, return to this shell and type 'corpora-complete' and hit enter > `
-
-  await promptLoop(query, {
-    'corpora-complete': () => { return; }
-  });
-
   const buckets = {};
   for (const locale of getLocaleDirs()) {
     const localePath = path.join(OUT_DIR, locale);
@@ -327,19 +303,11 @@ const countBuckets = async () => {
   return config.get('skipCorpora') ? Promise.resolve() : _countBuckets();
 }
 
-processAndDownloadClips()
-  .then(stats =>
-    Promise.all([
-      stats,
-      sumDurations(),
-      countBuckets().then(async bucketStats =>
-        merge(
-          bucketStats,
-          await archiveAndUpload()
-        )
-      )
-    ])
+countBuckets().then(async bucketStats =>
+  merge(
+    bucketStats,
+    await archiveAndUpload()
   )
-  .then(collectAndUploadStats)
-  .catch(e => console.error(e))
-  .finally(() => process.exit(0));
+)
+.catch(e => console.error(e))
+.finally(() => process.exit(0));

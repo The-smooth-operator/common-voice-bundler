@@ -82,7 +82,7 @@ const config = convict({
   }
 });
 
-config.loadFile('./config.json');
+config.loadFile('./config/config.json');
 config.validate();
 
 module.exports = config;
